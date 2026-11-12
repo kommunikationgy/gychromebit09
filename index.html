@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infoskärm - Falkenbergs gymnasieskola</title>
+  <style>
+    /* Nollställ marginaler och fyll skärmen */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    /* Presentationslager */
+    #presentation-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    #presentation-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* Gemensam behållare längst upp */
+    #overlay-wrapper {
+      position: fixed;
+      top: 0;
+      left: 24px;
+      z-index: 10;
+      display: flex;
+      align-items: stretch;
+      gap: 16px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Gemensam stil och storlek för Klock- och Matsedelsrutan */
+    #clock-overlay,
+    #lunch-overlay {
+      width: 500px;
+      box-sizing: border-box;
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-top: none;
+      border-radius: 0 0 16px 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+      padding: 16px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* Layout inuti klockrutan */
+    #clock-content {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      width: 100%;
+    }
+
+    /* Analog klocka (SVG) */
+    #analog-clock {
+      width: 104px;
+      height: 104px;
+      flex-shrink: 0;
+    }
+
+    #clock-text-group {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      flex-grow: 1;
+      overflow: hidden;
+    }
+
+    /* Digital klocka */
+    #clock-time {
+      color: #ffffff;
+      font-size: 3.9rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0.04em;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 3px 6px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Fullt datum */
+    #clock-date {
+      color: #e5e7eb;
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin-top: 6px;
+      white-space: nowrap;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Typografi för Matsedeln */
+    #lunch-header {
+      color: #fbbf24;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    #lunch-menu {
+      color: #ffffff;
+      font-size: 1.22rem;
+      font-weight: 600;
+      line-height: 1.35;
+      white-space: pre-line;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Google Presentation (Chromebit 02) -->
+  <div id="presentation-container">
+    <iframe 
+      id="presentation-frame"
+      src="about:blank"
+      allowfullscreen="true"
+      mozallowfullscreen="true"
+      webkitallowfullscreen="true">
+    </iframe>
+  </div>
+
+  <!-- Överliggande informationsrutor -->
+  <div id="overlay-wrapper">
+    <!-- Klockruta -->
+    <div id="clock-overlay">
+      <div id="clock-content">
+        <svg id="analog-clock" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" stroke="rgba(255, 255, 255, 0.25)" stroke-width="3" fill="rgba(0, 0, 0, 0.30)" />
+          
+          <line x1="50" y1="8" x2="50" y2="15" stroke="rgba(255, 255, 255, 0.85)" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="92" y1="50" x2="85" y2="50" stroke="rgba(255, 255, 255, 0.85)" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="50" y1="92" x2="50" y2="85" stroke="rgba(255, 255, 255, 0.85)" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="8" y1="50" x2="15" y2="50" stroke="rgba(255, 255, 255, 0.85)" stroke-width="2.5" stroke-linecap="round" />
+          
+          <line id="hour-hand" x1="50" y1="50" x2="50" y2="27" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
+          <line id="min-hand" x1="50" y1="50" x2="50" y2="17" stroke="#e5e7eb" stroke-width="3" stroke-linecap="round" />
+          <line id="sec-hand" x1="50" y1="50" x2="50" y2="13" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" />
+          <circle cx="50" cy="50" r="3.5" fill="#fbbf24" />
+        </svg>
+
+        <div id="clock-text-group">
+          <div id="clock-time">00:00</div>
+          <div id="clock-date">Laddar datum...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dagens Lunch -->
+    <div id="lunch-overlay">
+      <div id="lunch-header">🍽️ DAGENS LUNCH</div>
+      <div id="lunch-menu">Hämtar matsedel...</div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. KONFIGURATION & SCHEMAN
+    // ==========================================
+    const PRESENTATION_URL = "https://docs.google.com/presentation/d/e/2PACX-1vSz-ZGza1soVJFLqBc1wNV1N8Yi-IV1mrvfZFKYYfAZ0YH8KxEyAphadvqt0FBmjHbZX8G_Y62gBdRs/embed?start=true&loop=true&delayms=5000&rm=minimal";
+    const RSS_MENU_URL = "https://www.skolmat.info/api/public/matsedlar/C3EC1DB9-EE3A-4BD4-B7F5-D0793C570944/rss?period=today";
+
+    // Testläge: Sätt till true om du testar utanför skoltid och vill tvinga fram skärmen direkt
+    const TEST_MODE = false;
+
+    // Ordinarie öppettider (måndag–fredag kl. 07:30–17:00)
+    const REGULAR_START_HOUR = 7;
+    const REGULAR_START_MINUTE = 30;
+    const REGULAR_END_HOUR = 17;
+    const REGULAR_END_MINUTE = 0;
+    const WEEKDAYS_ONLY = true;
+
+    // Specialdag: 14 november 2026 (kl. 07:00–15:00)
+    const SPECIAL_YEAR = 2026;
+    const SPECIAL_MONTH = 11;
+    const SPECIAL_DAY = 14;
+    const SPECIAL_START_HOUR = 7;
+    const SPECIAL_START_MINUTE = 0;
+    const SPECIAL_END_HOUR = 15;
+    const SPECIAL_END_MINUTE = 0;
+
+    // Dölj överlägget när skärmen är inaktiv
+    const HIDE_WHEN_INACTIVE = true;
+
+    let isActiveState = null;
+
+    // ==========================================
+    // 2. KLOCKOR, DATUM OCH SCHEMA
+    // ==========================================
+    function updateDisplayAndSchedule() {
+      const now = new Date();
+      
+      // Korrigerad digital tid
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('clock-time').textContent = `${hours}:${minutes}`;
+
+      // Fullt datum på svenska
+      const weekday = now.toLocaleDateString('sv-SE', { weekday: 'long' });
+      const month = now.toLocaleDateString('sv-SE', { month: 'long' });
+      const day = now.getDate();
+
+      const capWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+      const capMonth = month.charAt(0).toUpperCase() + month.slice(1);
+      document.getElementById('clock-date').textContent = `${capWeekday} den ${day} ${capMonth}`;
+
+      // Analog urtavla
+      const sec = now.getSeconds();
+      const min = now.getMinutes();
+      const hr = now.getHours();
+
+      const secAngle = sec * 6;
+      const minAngle = (min + sec / 60) * 6;
+      const hrAngle = ((hr % 12) + min / 60) * 30;
+
+      document.getElementById('sec-hand').setAttribute('transform', `rotate(${secAngle} 50 50)`);
+      document.getElementById('min-hand').setAttribute('transform', `rotate(${minAngle} 50 50)`);
+      document.getElementById('hour-hand').setAttribute('transform', `rotate(${hrAngle} 50 50)`);
+
+      // Schemaberäkning
+      let shouldBeActive = false;
+
+      if (TEST_MODE) {
+        shouldBeActive = true;
+      } else {
+        const curYear = now.getFullYear();
+        const curMonth = now.getMonth() + 1;
+        const curDate = now.getDate();
+        const currentMinuteOfDay = now.getHours() * 60 + now.getMinutes();
+
+        // 14 november 2026 kl. 07:00–15:00
+        const isSpecialEvent = (curYear === SPECIAL_YEAR && curMonth === SPECIAL_MONTH && curDate === SPECIAL_DAY);
+
+        if (isSpecialEvent) {
+          const specStart = SPECIAL_START_HOUR * 60 + SPECIAL_START_MINUTE;
+          const specEnd = SPECIAL_END_HOUR * 60 + SPECIAL_END_MINUTE;
+          shouldBeActive = (currentMinuteOfDay >= specStart && currentMinuteOfDay < specEnd);
+        } else {
+          // Ordinarie måndag–fredag
+          const dayOfWeek = now.getDay();
+          const isWeekday = (dayOfWeek >= 1 && dayOfWeek <= 5);
+
+          const regStart = REGULAR_START_HOUR * 60 + REGULAR_START_MINUTE;
+          const regEnd = REGULAR_END_HOUR * 60 + REGULAR_END_MINUTE;
+
+          shouldBeActive = isWeekday && (currentMinuteOfDay >= regStart && currentMinuteOfDay < regEnd);
+        }
+      }
+
+      if (shouldBeActive !== isActiveState) {
+        isActiveState = shouldBeActive;
+        applyScheduleState(shouldBeActive);
+      }
+    }
+
+    function applyScheduleState(active) {
+      const container = document.getElementById('presentation-container');
+      const iframe = document.getElementById('presentation-frame');
+      const overlay = document.getElementById('overlay-wrapper');
+
+      if (active) {
+        if (iframe.src === 'about:blank' || !iframe.src) {
+          iframe.src = PRESENTATION_URL;
+        }
+        container.style.display = 'block';
+        overlay.style.display = 'flex';
+      } else {
+        iframe.src = 'about:blank';
+        container.style.display = 'none';
+        if (HIDE_WHEN_INACTIVE) {
+          overlay.style.display = 'none';
+        } else {
+          overlay.style.display = 'flex';
+        }
+      }
+    }
+
+    updateDisplayAndSchedule();
+    setInterval(updateDisplayAndSchedule, 1000);
+
+    // ==========================================
+    // 3. MATSEDEL MED PROXY-FALLBACKS
+    // ==========================================
+    async function fetchMenuData() {
+      // 1. Direkt anrop
+      try {
+        const res = await fetch(`${RSS_MENU_URL}&_t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const xml = await res.text();
+          const items = parseXmlFeed(xml);
+          if (items && items.length > 0) return items;
+        }
+      } catch (e) {}
+
+      // 2. RSS2JSON proxy
+      try {
+        const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_MENU_URL)}&_t=${Date.now()}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.status === 'ok' && Array.isArray(json.items) && json.items.length > 0) {
+            return json.items.map(item => ({
+              title: item.title || '',
+              description: item.description || '',
+              pubDate: item.pubDate || ''
+            }));
+          }
+        }
+      } catch (e) {}
+
+      // 3. AllOrigins proxy
+      try {
+        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(RSS_MENU_URL)}&_t=${Date.now()}`);
+        if (res.ok) {
+          const xml = await res.text();
+          const items = parseXmlFeed(xml);
+          if (items && items.length > 0) return items;
+        }
+      } catch (e) {}
+
+      // 4. CodeTabs CORS proxy
+      try {
+        const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(RSS_MENU_URL)}`);
+        if (res.ok) {
+          const xml = await res.text();
+          const items = parseXmlFeed(xml);
+          if (items && items.length > 0) return items;
+        }
+      } catch (e) {}
+
+      return null;
+    }
+
+    function parseXmlFeed(xmlText) {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(xmlText, 'text/xml');
+      const items = xml.querySelectorAll('item');
+      const result = [];
+      items.forEach(item => {
+        result.push({
+          title: item.querySelector('title') ? item.querySelector('title').textContent : '',
+          description: item.querySelector('description') ? item.querySelector('description').textContent : '',
+          pubDate: item.querySelector('pubDate') ? item.querySelector('pubDate').textContent : ''
+        });
+      });
+      return result;
+    }
+
+    function findTodayItem(items) {
+      if (!items || items.length === 0) return null;
+
+      if (items.length === 1) {
+        return items[0];
+      }
+
+      const now = new Date();
+      const todayName = now.toLocaleDateString('sv-SE', { weekday: 'long' }).toLowerCase();
+      const todayISO = now.toISOString().slice(0, 10);
+      const dayNum = now.getDate();
+      const monthNum = now.getMonth() + 1;
+
+      let match = items.find(i => (i.title || '').toLowerCase().includes(todayName));
+      if (match) return match;
+
+      match = items.find(i => {
+        const str = `${i.title || ''} ${i.pubDate || ''}`;
+        return str.includes(todayISO) || str.includes(`${dayNum}/${monthNum}`);
+      });
+      if (match) return match;
+
+      const dayIndex = now.getDay();
+      if (dayIndex >= 1 && dayIndex <= 5 && items[dayIndex - 1]) {
+        return items[dayIndex - 1];
+      }
+
+      return items[0];
+    }
+
+    function cleanText(raw) {
+      if (!raw) return "";
+
+      let text = raw
+        .replace(/<br\s*[\/]?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<p[^>]*>/gi, '');
+
+      const doc = new DOMParser().parseFromString(text, 'text/html');
+      let decoded = doc.body.textContent || "";
+
+      return decoded.trim();
+    }
+
+    async function updateLunchMenu() {
+      const menuEl = document.getElementById('lunch-menu');
+      const items = await fetchMenuData();
+
+      if (!items || items.length === 0) {
+        menuEl.textContent = "Ingen lunch serveras idag.";
+        return;
+      }
+
+      const todayItem = findTodayItem(items);
+      if (todayItem) {
+        const desc = cleanText(todayItem.description);
+        const title = cleanText(todayItem.title);
+        menuEl.textContent = desc || title || "Ingen matsedel angiven för idag.";
+      } else {
+        menuEl.textContent = "Ingen lunch serveras idag.";
+      }
+    }
+
+    updateLunchMenu();
+    setInterval(updateLunchMenu, 30 * 60 * 1000);
+
+    // ==========================================
+    // 4. DRIFT & MINNESRENSNING
+    // ==========================================
+    // Mjuk uppdatering av presentationen var 15:e minut
+    setInterval(function() {
+      if (isActiveState) {
+        const iframe = document.getElementById('presentation-frame');
+        if (iframe) {
+          iframe.src = PRESENTATION_URL;
+        }
+      }
+    }, 15 * 60 * 1000);
+
+    // Omladdning kl. 03:00 varje natt för att rensa RAM-minnet
+    setInterval(function() {
+      const now = new Date();
+      if (now.getHours() === 3 && now.getMinutes() === 0) {
+        window.location.reload();
+      }
+    }, 60 * 1000);
+  </script>
+</body>
+</html>
